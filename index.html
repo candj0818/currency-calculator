@@ -256,6 +256,9 @@
     let values = { KRW: "1000000", VND: "", USD: "", CNY: "", THB: "" };
     let rates = {};
     const highlightedCodes = new Set(["KRW", "VND", "USD", "CNY", "THB"]);
+    const AUTO_REFRESH_MS = 5 * 60 * 1000;
+    let autoRefreshTimer = null;
+    let isLoadingRates = false;
 
     const rowsEl = document.getElementById("rows");
     const statusEl = document.getElementById("status");
@@ -336,7 +339,9 @@
       renderRows();
     }
 
-    async function loadRates() {
+    async function loadRates(isAuto = false) {
+      if (isLoadingRates) return;
+      isLoadingRates = true;
       setStatus("실시간 환율 불러오는 중...");
       try {
         const res = await fetch("https://open.er-api.com/v6/latest/USD");
@@ -357,12 +362,26 @@
         const updatedAt = data.time_last_update_utc
           ? new Date(data.time_last_update_utc)
           : new Date();
-        updatedEl.textContent = updatedAt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-        setStatus("환율 업데이트 완료");
+        updatedEl.textContent = "업데이트 " + updatedAt.toLocaleString("ko-KR", {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+        setStatus(isAuto ? "5분 자동 새로고침으로 환율 업데이트 완료" : "환율 업데이트 완료");
         recalculate();
       } catch (e) {
         setStatus("환율 로드 실패: 인터넷 연결 또는 API 상태를 확인해 주세요.", true);
+      } finally {
+        isLoadingRates = false;
       }
+    }
+
+    function startAutoRefresh() {
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      autoRefreshTimer = setInterval(() => {
+        loadRates(true);
+      }, AUTO_REFRESH_MS);
     }
 
     function inputKey(k) {
@@ -434,6 +453,7 @@
 
     renderRows();
     loadRates();
+    startAutoRefresh();
   </script>
 </body>
 </html>
