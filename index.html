@@ -31,7 +31,7 @@
 
     .app {
       width: min(100vw, 430px);
-      min-height: 100vh;
+      min-height: 90vh;
       background: var(--panel-bg);
       box-shadow: 0 10px 30px rgba(0,0,0,0.3);
       display: flex;
@@ -137,18 +137,6 @@
       font-size: 14px;
     }
 
-    .add-btn {
-      border: 1px solid rgba(0,0,0,0.18);
-      background: rgba(255,255,255,0.15);
-      color: #667178;
-      border-radius: 8px;
-      width: 40px;
-      height: 40px;
-      font-size: 28px;
-      line-height: 1;
-      cursor: pointer;
-    }
-
     .pad {
       margin-top: auto;
       background: linear-gradient(180deg, #d8dad8 0%, #bcc1bf 100%);
@@ -198,7 +186,7 @@
     .status.error { color: #b00020; }
 
     @media (min-width: 431px) {
-      .app { min-height: 890px; border-radius: 14px; overflow: hidden; }
+      .app { min-height: 800px; border-radius: 14px; overflow: hidden; }
       body { padding: 24px 0; }
     }
   </style>
@@ -209,8 +197,7 @@
     <section class="rows" id="rows"></section>
 
     <div class="actions">
-      <button class="add-btn" id="addCurrency" title="통화 추가">+</button>
-      <span>통화 추가 / 실시간 환율</span>
+      <span>실시간 환율</span>
       <span id="lastUpdated">로딩 중...</span>
     </div>
 
@@ -411,27 +398,6 @@
       recalculate();
     }
 
-    function addCurrency() {
-      const options = Object.keys(currencyMeta).filter((c) => !activeCurrencies.includes(c));
-      if (options.length === 0) {
-        setStatus("추가 가능한 통화가 없습니다.");
-        return;
-      }
-
-      const pick = prompt("추가할 통화 코드를 입력하세요: " + options.join(", "));
-      if (!pick) return;
-      const code = pick.trim().toUpperCase();
-      if (!options.includes(code)) {
-        setStatus("지원하지 않는 통화 코드입니다.", true);
-        return;
-      }
-
-      activeCurrencies.push(code);
-      values[code] = "0";
-      renderRows();
-      recalculate();
-    }
-
     document.querySelectorAll("button.key").forEach((b) => {
       b.addEventListener("click", () => {
         const key = b.dataset.key;
@@ -448,8 +414,6 @@
         if (action === "today") setStatus("오늘 기준 최신 환율을 적용 중입니다.");
       });
     });
-
-    document.getElementById("addCurrency").addEventListener("click", addCurrency);
 
     renderRows();
     loadRates();
