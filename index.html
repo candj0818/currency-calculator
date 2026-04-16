@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>실시간 환율 계산기</title>
+  <style>
+    :root {
+      --panel-bg: #b8c3cb;
+      --row-bg: #c4ced5;
+      --row-active: #404a51;
+      --value-bg: #e6edf2;
+      --value-active: #9fc9df;
+      --text: #1f262b;
+      --muted: #6b747a;
+      --key-bg: linear-gradient(180deg, #efefec 0%, #c7c7c1 100%);
+      --key-shadow: inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -2px 0 rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.25);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #9aa6ae;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      color: var(--text);
+    }
+
+    .app {
+      width: min(100vw, 430px);
+      min-height: 100vh;
+      background: var(--panel-bg);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .rows {
+      padding: 12px 10px 8px;
+      display: grid;
+      gap: 8px;
+      background: linear-gradient(180deg, #c4ced5 0%, #b4c0c8 100%);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 56px 64px 1fr 28px;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: var(--row-bg);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 120ms ease;
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+
+    .row.active {
+      background: var(--row-active);
+      color: #f2f6f9;
+      border-color: rgba(0,0,0,0.2);
+    }
+
+    .flag {
+      width: 56px;
+      height: 36px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      font-size: 34px;
+      background: #e6ecf1;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    .code {
+      font-size: 21px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+
+    .value {
+      text-align: right;
+      font-size: 18px;
+      font-weight: 700;
+      background: var(--value-bg);
+      padding: 8px 10px;
+      border-radius: 7px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12);
+      color: #252d32;
+    }
+
+    .row.active .value {
+      background: var(--value-active);
+      color: #12212a;
+      box-shadow: inset 0 0 0 1px rgba(57, 111, 137, 0.5);
+    }
+
+    .spark {
+      text-align: center;
+      font-size: 18px;
+      opacity: 0.7;
+    }
+
+    .actions {
+      padding: 0 14px 10px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .add-btn {
+      border: 1px solid rgba(0,0,0,0.18);
+      background: rgba(255,255,255,0.15);
+      color: #667178;
+      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .pad {
+      margin-top: auto;
+      background: linear-gradient(180deg, #d8dad8 0%, #bcc1bf 100%);
+      padding: 10px 8px 12px;
+      border-top: 2px solid rgba(255,255,255,0.5);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button.key {
+      border: 0;
+      border-radius: 10px;
+      background: var(--key-bg);
+      box-shadow: var(--key-shadow);
+      min-height: 74px;
+      font-size: 26px;
+      color: #1d2124;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    button.key:active {
+      transform: translateY(1px);
+      filter: brightness(0.96);
+    }
+
+    .c { background: linear-gradient(180deg, #f3b5ab 0%, #db7667 100%) !important; }
+    .r { background: linear-gradient(180deg, #d3dbe6 0%, #8e9aaa 100%) !important; }
+    .tall {
+      grid-row: span 2;
+      min-height: 158px !important;
+      background: linear-gradient(180deg, #f0c587 0%, #e39645 100%) !important;
+      font-size: 32px !important;
+    }
+
+    .status {
+      padding: 6px 14px 10px;
+      font-size: 12px;
+      color: #5d6770;
+      min-height: 30px;
+    }
+
+    .status.error { color: #b00020; }
+
+    @media (min-width: 431px) {
+      .app { min-height: 890px; border-radius: 14px; overflow: hidden; }
+      body { padding: 24px 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="rows" id="rows"></section>
+
+    <div class="actions">
+      <button class="add-btn" id="addCurrency" title="통화 추가">+</button>
+      <span>통화 추가 / 실시간 환율</span>
+      <span id="lastUpdated">로딩 중...</span>
+    </div>
+
+    <section class="pad">
+      <div class="grid">
+        <button class="key c" data-action="clear">C</button>
+        <button class="key" data-key="7">7</button>
+        <button class="key" data-key="8">8</button>
+        <button class="key" data-key="9">9</button>
+
+        <button class="key r" data-action="refresh">⟳</button>
+        <button class="key" data-key="4">4</button>
+        <button class="key" data-key="5">5</button>
+        <button class="key" data-key="6">6</button>
+
+        <button class="key tall" data-action="today">📅</button>
+        <button class="key" data-key="1">1</button>
+        <button class="key" data-key="2">2</button>
+        <button class="key" data-key="3">3</button>
+
+        <button class="key" data-key="0">0</button>
+        <button class="key" data-key=".">.</button>
+        <button class="key" data-action="back">⌫</button>
+      </div>
+    </section>
+
+    <div class="status" id="status"></div>
+  </main>
+
+  <script>
+    const currencyMeta = {
+      KRW: { name: "원화", flag: "🇰🇷" },
+      USD: { name: "달러", flag: "🇺🇸" },
+      CNY: { name: "중국 위안화", flag: "🇨🇳" },
+      VND: { name: "베트남 동", flag: "🇻🇳" },
+      THB: { name: "태국 바트", flag: "🇹🇭" },
+      EUR: { name: "유로", flag: "🇪🇺" },
+      JPY: { name: "일본 엔", flag: "🇯🇵" }
+    };
+
+    let activeCurrencies = ["KRW", "VND", "USD", "CNY", "THB"];
+    let activeIndex = 0;
+    let values = { KRW: "1000000", VND: "", USD: "", CNY: "", THB: "" };
+    let rates = {};
+
+    const rowsEl = document.getElementById("rows");
+    const statusEl = document.getElementById("status");
+    const updatedEl = document.getElementById("lastUpdated");
+
+    function setStatus(msg, isError = false) {
+      statusEl.textContent = msg;
+      statusEl.classList.toggle("error", isError);
+    }
+
+    function formatInputRaw(raw) {
+      if (!raw) return "";
+      if (raw === ".") return "0.";
+
+      if (raw.includes(".")) {
+        const parts = raw.split(".");
+        const i = Number(parts[0] || 0).toLocaleString("ko-KR");
+        return i + "." + (parts[1] || "");
+      }
+      return Number(raw).toLocaleString("ko-KR");
+    }
+
+    function formatNumber(n, code) {
+      const zeroDecimal = ["KRW", "VND", "THB", "JPY"];
+      const digits = zeroDecimal.includes(code) ? 0 : 2;
+      return n.toLocaleString("ko-KR", {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function renderRows() {
+      rowsEl.innerHTML = "";
+      activeCurrencies.forEach((code, idx) => {
+        const row = document.createElement("article");
+        row.className = "row" + (idx === activeIndex ? " active" : "");
+
+        const raw = values[code] || "";
+        let display = "0";
+        if (idx === activeIndex) {
+          display = formatInputRaw(raw || "0");
+        } else {
+          const numeric = Number(raw || 0);
+          display = formatNumber(numeric, code);
+        }
+
+        row.innerHTML = `
+          <div class="flag" title="${currencyMeta[code].name}">${currencyMeta[code].flag}</div>
+          <div class="code">${code}</div>
+          <div class="value">${display}</div>
+          <div class="spark">📈</div>
+        `;
+        row.addEventListener("click", () => {
+          activeIndex = idx;
+          renderRows();
+        });
+        rowsEl.appendChild(row);
+      });
+    }
+
+    function recalculate() {
+      if (!rates.USD) return;
+
+      const base = activeCurrencies[activeIndex];
+      const baseValue = Number(values[base] || 0);
+      const baseRate = rates[base];
+
+      if (!baseRate) return;
+
+      const usdAmount = baseValue / baseRate;
+
+      activeCurrencies.forEach((code, idx) => {
+        if (idx === activeIndex) return;
+        const target = usdAmount * rates[code];
+        values[code] = String(target);
+      });
+
+      renderRows();
+    }
+
+    async function loadRates() {
+      setStatus("실시간 환율 불러오는 중...");
+      try {
+        const res = await fetch("https://api.frankfurter.dev/v1/latest?base=USD");
+        if (!res.ok) throw new Error("환율 API 응답 실패");
+        const data = await res.json();
+        rates = { USD: 1, ...data.rates };
+        const now = new Date();
+        updatedEl.textContent = now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+        setStatus("환율 업데이트 완료");
+        recalculate();
+      } catch (e) {
+        setStatus("환율 로드 실패: 인터넷 연결 또는 API 상태를 확인해 주세요.", true);
+      }
+    }
+
+    function inputKey(k) {
+      const code = activeCurrencies[activeIndex];
+      let raw = values[code] || "";
+
+      if (k === ".") {
+        if (raw.includes(".")) return;
+        raw = raw || "0";
+        values[code] = raw + ".";
+      } else {
+        if (raw === "0") raw = "";
+        values[code] = raw + k;
+      }
+      recalculate();
+    }
+
+    function clearActive() {
+      values[activeCurrencies[activeIndex]] = "0";
+      recalculate();
+    }
+
+    function backspaceActive() {
+      const code = activeCurrencies[activeIndex];
+      const raw = values[code] || "";
+      values[code] = raw.length <= 1 ? "0" : raw.slice(0, -1);
+      recalculate();
+    }
+
+    function addCurrency() {
+      const options = Object.keys(currencyMeta).filter((c) => !activeCurrencies.includes(c));
+      if (options.length === 0) {
+        setStatus("추가 가능한 통화가 없습니다.");
+        return;
+      }
+
+      const pick = prompt("추가할 통화 코드를 입력하세요: " + options.join(", "));
+      if (!pick) return;
+      const code = pick.trim().toUpperCase();
+      if (!options.includes(code)) {
+        setStatus("지원하지 않는 통화 코드입니다.", true);
+        return;
+      }
+
+      activeCurrencies.push(code);
+      values[code] = "0";
+      renderRows();
+      recalculate();
+    }
+
+    document.querySelectorAll("button.key").forEach((b) => {
+      b.addEventListener("click", () => {
+        const key = b.dataset.key;
+        const action = b.dataset.action;
+
+        if (key) {
+          inputKey(key);
+          return;
+        }
+
+        if (action === "clear") clearActive();
+        if (action === "back") backspaceActive();
+        if (action === "refresh") loadRates();
+        if (action === "today") setStatus("오늘 기준 최신 환율을 적용 중입니다.");
+      });
+    });
+
+    document.getElementById("addCurrency").addEventListener("click", addCurrency);
+
+    renderRows();
+    loadRates();
+  </script>
+</body>
+</html>
