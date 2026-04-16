@@ -93,6 +93,14 @@
       letter-spacing: 0.4px;
     }
 
+    .code.hot {
+      color: #c42020;
+    }
+
+    .row.active .code.hot {
+      color: #ff6b6b;
+    }
+
     .value {
       text-align: right;
       font-size: 18px;
@@ -247,6 +255,7 @@
     let activeIndex = 0;
     let values = { KRW: "1000000", VND: "", USD: "", CNY: "", THB: "" };
     let rates = {};
+    const highlightedCodes = new Set(["KRW", "VND", "USD", "CNY", "THB"]);
 
     const rowsEl = document.getElementById("rows");
     const statusEl = document.getElementById("status");
@@ -295,7 +304,7 @@
 
         row.innerHTML = `
           <div class="flag" title="${currencyMeta[code].name}">${currencyMeta[code].flag}</div>
-          <div class="code">${code}</div>
+          <div class="code${highlightedCodes.has(code) ? " hot" : ""}">${code}</div>
           <div class="value">${display}</div>
           <div class="spark">📈</div>
         `;
