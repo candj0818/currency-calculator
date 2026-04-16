@@ -38,6 +38,17 @@
       flex-direction: column;
     }
 
+    .app-title {
+      padding: 14px 14px 8px;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      color: #1f2a31;
+      text-align: center;
+      background: linear-gradient(180deg, #cad4db 0%, #bcc7cf 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.45);
+    }
+
     .rows {
       padding: 12px 10px 8px;
       display: grid;
@@ -186,6 +197,7 @@
 </head>
 <body>
   <main class="app">
+    <header class="app-title">동민이를 위한 계산기</header>
     <section class="rows" id="rows"></section>
 
     <div class="actions">
