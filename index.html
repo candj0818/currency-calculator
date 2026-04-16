@@ -246,6 +246,7 @@
     const AUTO_REFRESH_MS = 5 * 60 * 1000;
     let autoRefreshTimer = null;
     let isLoadingRates = false;
+    let replaceOnNextInput = true;
 
     const rowsEl = document.getElementById("rows");
     const statusEl = document.getElementById("status");
@@ -300,6 +301,7 @@
         `;
         row.addEventListener("click", () => {
           activeIndex = idx;
+          replaceOnNextInput = true;
           renderRows();
         });
         rowsEl.appendChild(row);
@@ -381,6 +383,13 @@
       const code = activeCurrencies[activeIndex];
       let raw = values[code] || "";
 
+      if (replaceOnNextInput) {
+        values[code] = k === "." ? "0." : k;
+        replaceOnNextInput = false;
+        recalculate();
+        return;
+      }
+
       if (k === ".") {
         if (raw.includes(".")) return;
         raw = raw || "0";
@@ -389,6 +398,7 @@
         if (raw === "0") raw = "";
         values[code] = raw + k;
       }
+      replaceOnNextInput = false;
       recalculate();
     }
 
