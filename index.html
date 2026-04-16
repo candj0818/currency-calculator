@@ -318,12 +318,25 @@
     async function loadRates() {
       setStatus("실시간 환율 불러오는 중...");
       try {
-        const res = await fetch("https://api.frankfurter.dev/v1/latest?base=USD");
+        const res = await fetch("https://open.er-api.com/v6/latest/USD");
         if (!res.ok) throw new Error("환율 API 응답 실패");
         const data = await res.json();
-        rates = { USD: 1, ...data.rates };
-        const now = new Date();
-        updatedEl.textContent = now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+        if (data.result !== "success" || !data.rates) {
+          throw new Error("환율 데이터 형식 오류");
+        }
+
+        rates = data.rates;
+
+        // 화면에 표시 중인 통화가 모두 응답에 있는지 확인한다.
+        const missing = activeCurrencies.filter((code) => !rates[code]);
+        if (missing.length > 0) {
+          throw new Error("일부 통화 환율 누락: " + missing.join(", "));
+        }
+
+        const updatedAt = data.time_last_update_utc
+          ? new Date(data.time_last_update_utc)
+          : new Date();
+        updatedEl.textContent = updatedAt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
         setStatus("환율 업데이트 완료");
         recalculate();
       } catch (e) {
