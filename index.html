@@ -242,6 +242,7 @@
     let activeIndex = 0;
     let values = { KRW: "1000000", VND: "", USD: "", CNY: "", THB: "" };
     let rates = {};
+    const FIXED_RATES = { VND: 26000 };
     const highlightedCodes = new Set(["KRW", "VND", "USD", "CNY", "THB"]);
     const AUTO_REFRESH_MS = 5 * 60 * 1000;
     let autoRefreshTimer = null;
@@ -341,6 +342,7 @@
         }
 
         rates = data.rates;
+        Object.assign(rates, FIXED_RATES);
 
         // 화면에 표시 중인 통화가 모두 응답에 있는지 확인한다.
         const missing = activeCurrencies.filter((code) => !rates[code]);
